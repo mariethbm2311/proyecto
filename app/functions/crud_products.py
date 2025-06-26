@@ -137,7 +137,7 @@ def update_product_by_id(
     if not orm_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Producto {product_id} no encontrado",
+            detail=f"Producto {product_id} Este producto no ha sido encontrado",
         )
 
     for k, v in product_in.dict(exclude_unset=True, exclude={"variantes"}).items():
@@ -156,12 +156,19 @@ def update_product_by_id(
 
 
 def delete_product(db: Session, product_id: int) -> None:
-    """Elimina un producto existente y limpia si cache"""
-    orm_product = db.query(Producto).get(product_id)
-    if not orm_product:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
-    db.delete(orm_product)
+    """
+    Elimina un producto existente de la base de datos y limpia el caché relacionado.
+    """
+    product = db.get(Producto, product_id)
+    
+    if product is None:
+        raise HTTPException(status_code=404, detail=f"Producto con ID {product_id} no encontrado.")
+    
+    db.delete(product)
     db.commit()
-    invalidate_cache(PRODUCTS)
-    invalidate_cache(PRODUCT, product_id)
+
+    # Invalida caché relacionado
+    for cache_key in [PRODUCTS, (PRODUCT, product_id)]:
+        invalidate_cache(*cache_key if isinstance(cache_key, tuple) else (cache_key,))
+    
     invalidate_pattern(PRODUCTS, "search:*")
