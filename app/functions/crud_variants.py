@@ -185,19 +185,27 @@ def update_variant_by_id(
     return updated
 
 
+from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
+
 def delete_variant_by_id(db: Session, variant_id: int) -> None:
-    """Elimina una variante y purga su cache."""
     orm_variant = (
-        db.query(VarianteProducto).filter(VarianteProducto.id == variant_id).first()
+        db.query(VarianteProducto)
+        .filter(VarianteProducto.id == variant_id)
+        .one_or_none()
     )
-    if not orm_variant:
+
+    if orm_variant is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"VARIANTE {variant_id} no encontrada",
+            detail=f"Variante con ID {variant_id} no encontrada.",
         )
+
     db.delete(orm_variant)
     db.commit()
 
+    # Invalidar caché para mantener datos actualizados
     invalidate_cache(resource=VARIANTS)
     invalidate_cache(resource=VARIANT, resource_id=variant_id)
     invalidate_pattern(resource=VARIANTS, pattern_suffix="search:*")
+
