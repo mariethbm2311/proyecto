@@ -93,7 +93,9 @@ def get_category_by_name(
 def create_category(db: Session, cat_in: CategoryCreate) -> CategoryOut:
     """Crea una nueva categoría, e invalida la lista en cache."""
     new = Categoria(
-        nombre_categoria=cat_in.nombre_categoria, logo_categoria=cat_in.logo_categoria
+        nombre_categoria=cat_in.nombre_categoria,
+        logo_categoria=cat_in.logo_categoria,
+        color=cat_in.color,  # ← nuevo campo
     )
     db.add(new)
     db.commit()
@@ -119,6 +121,7 @@ def update_category_by_id(
         )
     orm_cat.nombre_categoria = cat_in.nombre_categoria
     orm_cat.logo_categoria = cat_in.logo_categoria
+    orm_cat.color = cat_in.color  # ← nuevo campo
     db.commit()
     db.refresh(orm_cat)
 
